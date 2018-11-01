@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">WinVKey</string>
+    <string name="title_activity_main2">Main2Activity</string>
+    <string name="title_favourite">Favourite</string>
+    <string name="title_keys">Keys</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="title_settings">Settings</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="fragment_hello_blank">keys fragment</string>
+    <string name="input_hint_address">host</string>
+    <string name="input_hint_port">Port</string>
+    <string name="input_hint_key_name">Name</string>
+    <string name="input_hint_key_code">Code</string>
+    <item name="visible" type="id"/>
+    <item name="masked" type="id"/>
+</resources>
