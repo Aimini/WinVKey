@@ -11,7 +11,7 @@ import java.net.URISyntaxException
  * @Date: Created in 2:44 2018/10/19
  * @Modified By:
  */
-class Settings(host: String = "127.0.0.1", port: Int = 888) {
+class Settings(host: String = "127.0.0.1", port: Int = 8889) {
 
     var host: String = ""
         set(value) {
@@ -24,8 +24,8 @@ class Settings(host: String = "127.0.0.1", port: Int = 888) {
 
     var port: Int = 0
         set(value) {
-            if (value !in 0..65525)
-                throw NumberFormatException("port must in 0 - 65525")
+            if (value !in 1..65525)
+                throw NumberFormatException("port must in 1 - 65525")
             field = value
         }
 

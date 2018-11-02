@@ -41,7 +41,7 @@ class MySqlHelper(ctx: Context) : ManagedSQLiteOpenHelper(ctx, ctx.getDatabasePa
                 "is_favor" to INTEGER)
 
         db.insert("Settings",
-                "host" to "127.0.0.1", "port" to 0)
+                "host" to "127.0.0.1", "port" to 8889)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {

@@ -20,7 +20,7 @@ class KeysFragment() : Fragment() {
     private var mData: MutableList<Key> = mutableListOf()
     var isFavor: Boolean = false
         set(value) {
-            if(main_view != null){
+            if (main_view != null) {
                 button_add_key.visibility = if (isFavor) {
                     View.INVISIBLE
                 } else {
@@ -55,15 +55,21 @@ class KeysFragment() : Fragment() {
                 val key = mData[position]
                 view.textView.text = key.name
                 view.switch_key_item_favor.isChecked = key.isFavor > 0
-                view.switch_key_item_favor.setOnCheckedChangeListener {
-                    buttonView:CompoundButton, isChecked:Boolean ->
-                    if(isChecked){
+                view.switch_key_item_favor.setOnCheckedChangeListener { buttonView: CompoundButton, isChecked: Boolean ->
+                    if (isChecked) {
                         key.isFavor = 1
-                    }else
+                    } else
                         key.isFavor = 0
                     keyFavor(key)
                 }
                 return view;
+            }
+        }
+
+        main_view.onItemClickListener = object :AdapterView.OnItemClickListener{
+            override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val key:Key = main_view.adapter.getItem(position) as Key
+                keyPressed(key)
             }
         }
 
@@ -92,19 +98,19 @@ class KeysFragment() : Fragment() {
 
 
     override fun onContextItemSelected(item: MenuItem?): Boolean {
-        if (item != null &&item.menuInfo != null) {
+        if (item != null && item.menuInfo != null) {
             if (userVisibleHint) {
-                var info:AdapterView.AdapterContextMenuInfo = item.menuInfo as AdapterView.AdapterContextMenuInfo
-                var key:Key = main_view.adapter.getItem(info.position) as Key
-                when(item.itemId){
+                var info: AdapterView.AdapterContextMenuInfo = item.menuInfo as AdapterView.AdapterContextMenuInfo
+                var key: Key = main_view.adapter.getItem(info.position) as Key
+                when (item.itemId) {
                     R.id.item_detele_key -> {
                         this.keyDeleted(key)
                         mData.remove(key)
                         (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
                         return true
                     }
-                    R.id.item_modify_key->{
-                        this.showKeyModifyDialog(context,key)
+                    R.id.item_modify_key -> {
+                        this.showKeyModifyDialog(context, key)
                     }
                 }
                 return true;
@@ -114,15 +120,15 @@ class KeysFragment() : Fragment() {
         return super.onContextItemSelected(item)
     }
 
-    fun addKey(key: Key,index:Int? = null){
-        if(index != null)
-            mData.add(index,key)
+    fun addKey(key: Key, index: Int? = null) {
+        if (index != null)
+            mData.add(index, key)
         mData.add(key)
         (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
     }
 
-    fun modifyKey(oldKey: Key, newKey: Key){
-        mData.filter { k -> k == oldKey}
+    fun modifyKey(oldKey: Key, newKey: Key) {
+        mData.filter { k -> k == oldKey }
                 .forEach { k ->
                     k.isFavor = newKey.isFavor
                     k.code = newKey.code
@@ -131,14 +137,15 @@ class KeysFragment() : Fragment() {
         (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
     }
 
-    fun removeKey(key: Key){
+    fun removeKey(key: Key) {
         mData.remove(key)
         (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
+
     }
 
     fun setKeysList(keys: MutableList<Key>) {
         this.mData = keys
-        if(main_view != null)
+        if (main_view != null)
             (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
     }
 
@@ -161,7 +168,7 @@ class KeysFragment() : Fragment() {
             Toast.makeText(activity, "$keyName,$keyCodeStr", Toast.LENGTH_SHORT).show();
             try {
                 val keyCode = keyCodeStr.toInt();
-                val key = Key(keyCode, keyName,isFavor = 0)
+                val key = Key(keyCode, keyName, isFavor = 0)
                 mData.add(key)
                 keyAdded(key)
                 (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
@@ -175,7 +182,7 @@ class KeysFragment() : Fragment() {
     }
 
 
-    private fun showKeyModifyDialog(context:Context, key:Key){
+    private fun showKeyModifyDialog(context: Context, key: Key) {
         val builder = AlertDialog.Builder(context)
         val view = LayoutInflater.from(context).inflate(R.layout.dialog_modify_key, null)
         builder.setView(view)
@@ -200,10 +207,10 @@ class KeysFragment() : Fragment() {
                 var newKey = Key(
                         keyCode,
                         keyName,
-                        if(switchIsFovour.isChecked) 1 else 0
+                        if (switchIsFovour.isChecked) 1 else 0
                 )
-                mData.set(mData.indexOf(key),newKey)
-                keyModified(key,newKey)
+                mData.set(mData.indexOf(key), newKey)
+                keyModified(key, newKey)
                 (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
             } catch (e: NumberFormatException) {
                 Toast.makeText(activity, "key code must be a number", Toast.LENGTH_SHORT).show();
@@ -219,4 +226,5 @@ class KeysFragment() : Fragment() {
     var keyFavor: (Key) -> Unit = { key: Key -> }
     var keyModified: (Key, Key) -> Unit = { keyOld: Key, keyNew: Key -> }
     var keyDeleted: (Key) -> Unit = { key: Key -> }
+    var keyPressed: (Key) -> Unit = { key: Key -> }
 }// Required empty public constructor

@@ -7,6 +7,7 @@ import android.support.v4.app.FragmentPagerAdapter
 import android.support.v4.view.ViewPager
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.win_vkey.startai.winvkey.data_class.Key
@@ -14,7 +15,11 @@ import com.win_vkey.startai.winvkey.database.database
 import com.win_vkey.startai.winvkey.ext_method.get
 import com.win_vkey.startai.winvkey.ext_method.size
 import kotlinx.android.synthetic.main.activity_main.*
+import okhttp3.Call
+import okhttp3.Response
+import java.io.IOException
 import java.net.URISyntaxException
+import javax.security.auth.callback.Callback
 
 class MainActivity : AppCompatActivity() {
     private val mFragmentList = ArrayList<Fragment>();
@@ -45,8 +50,8 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun initFragments() {
-        mSettingsFragment.settings = this.database.getSettings();
-        myHttpHelper.settings = mSettingsFragment.settings
+        mSettingsFragment.setSettings( this.database.getSettings())
+        myHttpHelper.settings = mSettingsFragment.getSettings()
         mFavorKeysFragment.isFavor = true
         var allKeys = this.database.getAllKey().toMutableList()
         var favorKeys = allKeys.filter { key -> key.isFavor > 0 }.toMutableList()
@@ -75,17 +80,44 @@ class MainActivity : AppCompatActivity() {
                 mFavorKeysFragment.removeKey(key)
         }
 
+        var keyPressedCallback = { key: Key ->
+            myHttpHelper.sendKey(key).enqueue(object : Callback, okhttp3.Callback {
+                override fun onFailure(call: Call?, e: IOException?) {
+                    this@MainActivity.runOnUiThread(object : Runnable {
+                        override fun run() {
+                            Toast.makeText(this@MainActivity, "send key failed\n${e.toString()}", Toast.LENGTH_LONG).show()
+                            Log.e("send key", e.toString())
+                        }
+                    })
+                }
+
+                override fun onResponse(call: Call?, response: Response?) {
+                    this@MainActivity.runOnUiThread(object : Runnable {
+                        override fun run() {
+                            if (response != null) {
+                                if (response.code() == 400)
+                                    Toast.makeText(this@MainActivity, "send key succeed", Toast.LENGTH_SHORT).show()
+                                else {
+                                    Toast.makeText(this@MainActivity, "send key failed\n${response.body().toString()}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+
+                        }
+                    })
+                }
+            })
+        }
+        mKeysFragment.keyPressed = keyPressedCallback;
         mFavorKeysFragment.setKeysList(favorKeys)
         mFavorKeysFragment.keyDeleted = { key ->
             database.deleteKey(key)
             mKeysFragment.removeKey(key)
         }
-        mFavorKeysFragment.keyModified = {  oldKey, newKey ->
+        mFavorKeysFragment.keyModified = { oldKey, newKey ->
             database.updateKey(oldKey, newKey)
             mKeysFragment.modifyKey(oldKey, newKey)
         }
-        mFavorKeysFragment.keyFavor = {
-            key ->
+        mFavorKeysFragment.keyFavor = { key ->
             database.updateKey(key, key)
             mKeysFragment.modifyKey(key, key)
             if (key.isFavor > 0)
@@ -93,7 +125,7 @@ class MainActivity : AppCompatActivity() {
             else
                 mFavorKeysFragment.removeKey(key)
         }
-
+        mFavorKeysFragment.keyPressed = keyPressedCallback;
 
 /*
         mFavorKeysFragment.keyFavor;
@@ -123,7 +155,7 @@ class MainActivity : AppCompatActivity() {
     fun saveConfig(v: View) {
         try {
             //get settings, check NumberFormatException,URISyntaxException
-            val settings = mSettingsFragment.settings;
+            val settings = mSettingsFragment.getSettings();
             if (settings.host.isBlank()) {
                 Toast.makeText(this, "host can't be empty", Toast.LENGTH_SHORT).show()
                 return
@@ -132,9 +164,9 @@ class MainActivity : AppCompatActivity() {
             this.database.saveSettings(settings)
 
         } catch (e: NumberFormatException) {
-            Toast.makeText(this, "invalid port(number between 0 and 65535)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "invalid kport(number between 0 and 65535)", Toast.LENGTH_LONG).show()
         } catch (e: URISyntaxException) {
-            Toast.makeText(this, "invalid host", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "invalid host", Toast.LENGTH_LONG).show()
         }
         Toast.makeText(this, "Settings Saved", Toast.LENGTH_SHORT).show()
     }
