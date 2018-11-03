@@ -17,9 +17,9 @@ class MyHttpHelper {
         if (settings != null) {
             var client: OkHttpClient = OkHttpClient()
             val rqeust: Request = Request.Builder()
-                    .url(HttpUrl.parse("http://${settings!!.host}:${settings!!.port}"))
+                    .url(HttpUrl.parse("http://${settings!!.host}:${settings!!.port}/key-down"))
                     .post(FormBody.Builder()
-                            .add("code", "${key.code}")
+                            .add("KeyCode", "${key.code}")
                             .build())
                     .build()
             return client.newCall(rqeust)

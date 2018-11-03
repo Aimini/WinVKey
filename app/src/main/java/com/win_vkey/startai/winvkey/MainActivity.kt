@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     this@MainActivity.runOnUiThread(object : Runnable {
                         override fun run() {
                             if (response != null) {
-                                if (response.code() == 400)
+                                if (response.code() == 200)
                                     Toast.makeText(this@MainActivity, "send key succeed", Toast.LENGTH_SHORT).show()
                                 else {
                                     Toast.makeText(this@MainActivity, "send key failed\n${response.body().toString()}", Toast.LENGTH_LONG).show()
