@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey
+package com.startai.winvkey
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getTargetContext()
-        assertEquals("com.win_vkey.startai.winvkey", appContext.packageName)
+        assertEquals("com.startai.winvkey", appContext.packageName)
     }
 }

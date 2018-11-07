@@ -36,7 +36,7 @@ class KeysFragment() : Fragment() {
     }
 
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         var view = inflater!!.inflate(R.layout.fragment_keys, container, false)
@@ -74,7 +74,7 @@ class KeysFragment() : Fragment() {
         }
 
         button_add_key.setOnClickListener { it: View? ->
-            var builder = getKeyDialogBuilder(activity)
+            var builder = getKeyDialogBuilder(this@KeysFragment.activity!!)
             builder.show()
         }
 
@@ -110,7 +110,7 @@ class KeysFragment() : Fragment() {
                         return true
                     }
                     R.id.item_modify_key -> {
-                        this.showKeyModifyDialog(context, key)
+                        this.showKeyModifyDialog(KeysFragment@context!!, key)
                     }
                 }
                 return true;

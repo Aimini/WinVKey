@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey
+package com.startai.winvkey
 
 import org.junit.Test
 
