@@ -1,5 +1,7 @@
 package com.startai.winvkey
 
+import java.util.function.Predicate
+
 /**
  * @Author: AiMin
  * @Description: ShareSourceList provide data mSource for Share List.
@@ -14,69 +16,64 @@ class ShareSourceList<E> : ArrayList<E>() {
     private var mShareLists: MutableList<ShareList<E>> = ArrayList<ShareList<E>>()
 
     override fun clear() {
+        mShareLists.forEach {it-> it.clear() }
         super.clear()
     }
 
     override fun add(element: E): Boolean {
-        mShareLists.forEach { list ->
-            val f = list.getFilter()
-            if (f == null || f(element))
-                list.addWithoutNotify(element)
-        }
+        addToShareList(element,null)
         return super.add(element)
     }
 
     override fun add(index: Int, element: E) {
-        mShareLists.forEach { list ->
-            val f = list.getFilter()
-            if (f == null || f(element))
-                list.addWithoutNotify(element)
-        }
+        addToShareList(element,null)
         super.add(index, element)
     }
 
 
     override fun addAll(elements: Collection<E>): Boolean {
-        elements.forEach { element ->
-            mShareLists.forEach { list ->
-                val f = list.getFilter()
-                if (f == null || f(element))
-                    list.addWithoutNotify(element)
-            }
+        elements.forEach {
+            addToShareList(it,null)
         }
         return super.addAll(elements)
     }
 
     override fun addAll(index: Int, elements: Collection<E>): Boolean {
-        elements.forEach { element ->
-            mShareLists.forEach { list ->
-                val f = list.getFilter()
-                if (f == null || f(element))
-                    list.addWithoutNotify(element)
-            }
+        elements.forEach {
+            addToShareList(it,null)
         }
         return super.addAll(index, elements)
     }
 
     public fun addAll(elements: Array<E>): Boolean {
-        return addAll(elements.asList())
+        elements.forEach {
+            addToShareList(it,null)
+        }
+
+        return super.addAll(elements.asList())
     }
 
-    override fun removeRange(fromIndex: Int, toIndex: Int) {
+    //TODO: connect opertaion to ShareList
+    override fun set(index: Int, element: E): E {
+        return super.set(index, element)
+    }
+
+
+    public override fun removeRange(fromIndex: Int, toIndex: Int) {
         for (index in fromIndex until toIndex) {
-            mShareLists.forEach { list -> list.removeWithoutNotify(this@ShareSourceList.elementAt(index)) }
+            removeFromShareList(this.elementAt(index),null)
         }
 
         super.removeRange(fromIndex, toIndex)
     }
 
     override fun removeAt(index: Int): E {
-        mShareLists.forEach { list -> list.removeWithoutNotify(this@ShareSourceList.elementAt(index)) }
+        removeFromShareList(this.elementAt(index),null)
         return super.removeAt(index)
     }
 
     override fun remove(element: E): Boolean {
-        mShareLists.forEach { list -> list.removeWithoutNotify(element) }
+        removeFromShareList(element,null)
         return super.remove(element)
     }
 
@@ -84,23 +81,33 @@ class ShareSourceList<E> : ArrayList<E>() {
         remove element and Ignore list gived，
         called by ShareList
      */
-    private fun removeIgnoreShareList(element: E, list: ShareList<E>) {
+    private fun removeIgnoreNotify(element: E, ignore: ShareList<E>?) {
+        removeFromShareList(element,ignore)
         super.remove(element)
-        mShareLists.forEach { one -> if (one != list) list.removeWithoutNotify(element) }
     }
 
     /*
         add element and Ignore list gived，
         called by ShareList
      */
-    private fun addIgnoreShareList(element: E, list: ShareList<E>) {
-        mShareLists.forEach { one -> if (one != list){
-                    val f = one.getFilter()
-                    if (f == null || f(element))
-                        one.addWithoutNotify(element)
-                }
-            }
+    private fun addIgnoreNotify(element: E, ignore: ShareList<E>) {
+        addToShareList(element,ignore)
         super.add(element)
+    }
+
+    private fun addToShareList(element: E, ignore: ShareList<E>?) {
+        mShareLists.forEach { one ->
+            if (one != ignore) {
+                val f = one.getFilter()
+                if (f == null || f(element))
+                    one.addWithoutNotify(element)
+            }
+        }
+    }
+
+    private fun removeFromShareList(element: E, ignore: ShareList<E>?) {
+        mShareLists.forEach { one ->
+            if (one != ignore) one.removeWithoutNotify(element) }
     }
 
     fun shareListInstance(filter: (E) -> Boolean): ShareList<E> {
@@ -120,7 +127,7 @@ class ShareSourceList<E> : ArrayList<E>() {
         private var mSource: ShareSourceList<E>
         private val mFilter: ((E) -> Boolean)?
 
-        constructor(source: ShareSourceList<E>, filter: ((E) -> Boolean)?=null) : super() {
+        constructor(source: ShareSourceList<E>, filter: ((E) -> Boolean)? = null) : super() {
             this.mSource = source
             this.mFilter = filter
             source.forEach { e ->
@@ -130,40 +137,41 @@ class ShareSourceList<E> : ArrayList<E>() {
         }
 
         override fun clear() {
-            this.forEach { e -> mSource.removeIgnoreShareList(e, this) }
+            this.forEach { e -> mSource.removeIgnoreNotify(e, this) }
             super.clear()
         }
 
         override fun add(element: E): Boolean {
-            mSource.addIgnoreShareList(element, this)
+            mSource.addIgnoreNotify(element, this)
             return super.add(element)
         }
 
         override fun add(index: Int, element: E) {
-            mSource.addIgnoreShareList(element, this)
+            mSource.addIgnoreNotify(element, this)
             super.add(index, element)
         }
 
         override fun removeRange(fromIndex: Int, toIndex: Int) {
             for (i in fromIndex until toIndex) {
-                mSource.removeIgnoreShareList(this.elementAt(i), this)
+                mSource.removeIgnoreNotify(this.elementAt(i), this)
             }
             super.removeRange(fromIndex, toIndex)
         }
 
         override fun removeAt(index: Int): E {
-            mSource.removeIgnoreShareList(this.elementAt(index), this)
+            mSource.removeIgnoreNotify(this.elementAt(index), this)
             return super.removeAt(index)
         }
 
         override fun remove(element: E): Boolean {
-            mSource.removeIgnoreShareList(element, this)
+            mSource.removeIgnoreNotify(element, this)
             return super.remove(element)
         }
 
         override fun toString(): String {
             return super<java.util.ArrayList>.toString()
         }
+
         /*
          return element and don't notify source list,
          called by source list .
