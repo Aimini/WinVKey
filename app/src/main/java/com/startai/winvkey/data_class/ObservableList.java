@@ -18,16 +18,22 @@ import java.util.function.UnaryOperator;
 public class ObservableList<E> extends ArrayList<E> {
     private Observable<E> mObservable = new Observable<E>(this);
 
-    public void addObserver(ListObserver<E> ob){
+    public void addObserver(ObservableListObserver<E> ob){
         mObservable.addObserver(ob);
     }
 
-    public void deleteObserver(ListObserver<E> ob){
+    public void deleteObserver(ObservableListObserver<E> ob){
         mObservable.deleteObserver(ob);
     }
 
     public void deleteObservers(){
         mObservable.deleteObservers();
+    }
+
+    public void pause(Runnable r){
+        mObservable.setStopNotify(true);
+        r.run();
+        mObservable.setStopNotify(false);
     }
 
     @Override
@@ -151,8 +157,6 @@ public class ObservableList<E> extends ArrayList<E> {
                 mObservable.set(i,result);
         }
         super.replaceAll(cacheOperator);
-
-
     }
 
      enum MODIFY_TYPE{
@@ -162,9 +166,9 @@ public class ObservableList<E> extends ArrayList<E> {
     }
 
      class Observable<T> extends PausableObservable{
-        public List<T> mSource;
+        public ObservableList<T> mSource;
 
-        public Observable(List<T> mSource) {
+        public Observable(ObservableList<T> mSource) {
             this.mSource = mSource;
         }
 
@@ -190,12 +194,12 @@ public class ObservableList<E> extends ArrayList<E> {
     }
 
      class NotifyInfo<T>{
-        List<T> source;
+         ObservableList<T> source;
         MODIFY_TYPE type;
         int index;// for set(index,value)
         T value;
 
-        NotifyInfo(List<T> source, MODIFY_TYPE type, T value) {
+        NotifyInfo(ObservableList<T> source, MODIFY_TYPE type, T value) {
             this.source = source;
             this.type = type;
             this.value = value;
@@ -203,33 +207,3 @@ public class ObservableList<E> extends ArrayList<E> {
     }
 }
 
- abstract class ListObserver<T> implements java.util.Observer{
-    @Override
-    public void update(java.util.Observable o, Object arg) {
-        try{
-            if(arg instanceof ObservableList.NotifyInfo){
-                List<T> source =  ((ObservableList<T>.NotifyInfo<T>) arg).source;
-                ObservableList.MODIFY_TYPE type = ((ObservableList<T>.NotifyInfo<T>) arg).type;
-                T value = (T) ((ObservableList<T>.NotifyInfo<T>) arg).value;
-                switch (type) {
-                    case ADD:
-                        this.add(source,value);
-                        break;
-                    case DEL:
-                        this.delete(source,value);
-                        break;
-                    case SET:
-                        this.set(source, ((ObservableList.NotifyInfo) arg).index, value);
-                        break;
-                }
-            }
-        }catch (ClassCastException e){
-            Log.e(getClass().toString(),"not suitable Observable's info");
-        }
-    }
-
-     // all these function will called before data change
-     abstract public void add(List<T> source,T value);
-     abstract public void delete(List<T> source,T value);
-     abstract public void set(List<T> source,int index,T value);
-}

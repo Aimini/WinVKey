@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey.dummy
+package com.startai.winvkey.dummy
 
 import java.util.*
 

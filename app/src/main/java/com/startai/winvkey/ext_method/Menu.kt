@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey.ext_method
+package com.startai.winvkey.ext_method
 
 import android.view.Menu
 import android.view.MenuItem

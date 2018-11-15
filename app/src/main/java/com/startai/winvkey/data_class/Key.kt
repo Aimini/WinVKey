@@ -1,8 +1,5 @@
-package com.win_vkey.startai.winvkey.data_class
+package com.startai.winvkey.data_class
 
-import com.startai.winvkey.data_class.DataObserver
-import com.startai.winvkey.data_class.ObservableData
-import org.apache.tools.ant.taskdefs.Copy
 import java.util.*
 import kotlin.reflect.KProperty
 
@@ -15,7 +12,7 @@ import kotlin.reflect.KProperty
 class Key(code:Int,name:String,isFavor:Boolean) : ObservableData() {
     var code: Int = code
         set(value) {
-            this.propertyChanged(this,Key::code, field, value)
+            this.propertyChanged(this, Key::code, field, value)
             field = value
 
         }
@@ -23,7 +20,7 @@ class Key(code:Int,name:String,isFavor:Boolean) : ObservableData() {
 
     var name: String = name
         set(value){
-            this.propertyChanged(this,Key::name, field, value)
+            this.propertyChanged(this, Key::name, field, value)
             field = value
         }
 
@@ -32,6 +29,10 @@ class Key(code:Int,name:String,isFavor:Boolean) : ObservableData() {
             this.propertyChanged(this, Key::isFavor, field, value)
             field = value
         }
+
+    override fun toString(): String {
+        return "Key(code=$code, name='$name', isFavor=$isFavor)"
+    }
 
 }
 
@@ -46,7 +47,7 @@ public open class KeyObserver(): DataObserver() {
 
     }
     //
-    open fun changed(currentkey:Key){
+    open fun changed(currentkey: Key){
 
     }
 }

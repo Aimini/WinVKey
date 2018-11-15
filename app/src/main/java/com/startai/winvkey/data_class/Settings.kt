@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey.data_class
+package com.startai.winvkey.data_class
 
 import android.util.Patterns
 import android.webkit.URLUtil
@@ -20,6 +20,7 @@ class Settings(host: String = "127.0.0.1", port: Int = 8889) {
             field = value
 
         }
+
 
 
     var port: Int = 0

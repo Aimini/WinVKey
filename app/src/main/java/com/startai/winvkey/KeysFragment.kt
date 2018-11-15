@@ -1,4 +1,5 @@
-package com.win_vkey.startai.winvkey
+package com.startai.winvkey
+
 
 import android.app.Activity
 import android.app.AlertDialog
@@ -9,15 +10,17 @@ import android.text.SpannableStringBuilder
 import android.view.*
 import android.view.ContextMenu.ContextMenuInfo
 import android.widget.*
-import com.win_vkey.startai.winvkey.data_class.Key
+import com.startai.winvkey.data_class.ObservableList
+import com.startai.winvkey.data_class.Key
+import com.startai.winvkey.data_class.ObservableListObserver
 import kotlinx.android.synthetic.main.fragment_keys.*
-import kotlinx.android.synthetic.main.fragment_keys_item.view.*
 import org.jetbrains.anko.find
-
+import java.util.*
 
 class KeysFragment() : Fragment() {
 
-    private var mData: MutableList<Key> = mutableListOf()
+    private var mData: ObservableList<Key> = ObservableList<Key>()
+    private var mAdapter: KeyItemAdapter? = null
     var isFavor: Boolean = false
         set(value) {
             if (main_view != null) {
@@ -30,6 +33,16 @@ class KeysFragment() : Fragment() {
             field = value
         }
 
+    private val mNotifyObserver = object : ObservableListObserver<Key>() {
+        override fun update(o: Observable?, arg: Any?) {
+            this@KeysFragment.mAdapter?.notifyDataSetChanged()
+            super.update(o, arg)
+        }
+        override fun add(source: ObservableList<Key>?, value: Key?) {}
+        override fun delete(source: ObservableList<Key>?, value: Key?) {}
+        override fun set(source: ObservableList<Key>?, index: Int, value: Key?) {}
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,51 +52,42 @@ class KeysFragment() : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        var view = inflater!!.inflate(R.layout.fragment_keys, container, false)
-        var listView: ListView = view.find<ListView>(R.id.main_view)
+        val view = inflater.inflate(R.layout.fragment_keys, container, false)
+        val listView: ListView = view.find<ListView>(R.id.main_view)
         registerForContextMenu(listView)
         return view
 
     }
 
 
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        main_view.adapter = object : ArrayAdapter<Key>(activity, R.layout.fragment_keys_item, mData) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = LayoutInflater.from(context).inflate(R.layout.fragment_keys_item, null)
-                val key = mData[position]
-                view.textView.text = key.name
-                view.switch_key_item_favor.isChecked = key.isFavor > 0
-                view.switch_key_item_favor.setOnCheckedChangeListener { buttonView: CompoundButton, isChecked: Boolean ->
-                    if (isChecked) {
-                        key.isFavor = 1
-                    } else
-                        key.isFavor = 0
-                    keyFavor(key)
+        mAdapter = KeyItemAdapter(this.activity!!, R.layout.fragment_keys_item, mData)
+        mAdapter?.keyFavored = { it ->
+            this@KeysFragment.keyFavor(it)
+        }
+
+            main_view.adapter = mAdapter
+            main_view.onItemClickListener = object :AdapterView.OnItemClickListener{
+                override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val key: Key = main_view.adapter.getItem(position) as Key
+                    keyPressed(key)
                 }
-                return view;
+            }
+
+            button_add_key.setOnClickListener { it: View? ->
+                var builder = getKeyDialogBuilder(this@KeysFragment.activity!!)
+                builder.show()
+            }
+
+            button_add_key.visibility = if (isFavor) {
+                View.INVISIBLE
+            } else {
+                View.VISIBLE
             }
         }
 
-        main_view.onItemClickListener = object :AdapterView.OnItemClickListener{
-            override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val key:Key = main_view.adapter.getItem(position) as Key
-                keyPressed(key)
-            }
-        }
-
-        button_add_key.setOnClickListener { it: View? ->
-            var builder = getKeyDialogBuilder(this@KeysFragment.activity!!)
-            builder.show()
-        }
-
-        button_add_key.visibility = if (isFavor) {
-            View.INVISIBLE
-        } else {
-            View.VISIBLE
-        }
-    }
 
 
     override fun onCreateContextMenu(menu: ContextMenu, v: View,
@@ -104,49 +108,27 @@ class KeysFragment() : Fragment() {
                 var key: Key = main_view.adapter.getItem(info.position) as Key
                 when (item.itemId) {
                     R.id.item_detele_key -> {
-                        this.keyDeleted(key)
                         mData.remove(key)
-                        (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
                         return true
                     }
                     R.id.item_modify_key -> {
                         this.showKeyModifyDialog(KeysFragment@context!!, key)
                     }
                 }
-                return true;
+                return true
             }
 
         }
         return super.onContextItemSelected(item)
     }
 
-    fun addKey(key: Key, index: Int? = null) {
-        if (index != null)
-            mData.add(index, key)
-        mData.add(key)
-        (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
-    }
 
-    fun modifyKey(oldKey: Key, newKey: Key) {
-        mData.filter { k -> k == oldKey }
-                .forEach { k ->
-                    k.isFavor = newKey.isFavor
-                    k.code = newKey.code
-                    k.name = newKey.name
-                }
-        (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
-    }
 
-    fun removeKey(key: Key) {
-        mData.remove(key)
-        (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
-
-    }
-
-    fun setKeysList(keys: MutableList<Key>) {
+    fun setKeysList(keys: ObservableList<Key>) {
+        this.mData.deleteObserver(mNotifyObserver)
+        keys.addObserver(mNotifyObserver)
         this.mData = keys
-        if (main_view != null)
-            (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
+        mAdapter?.notifyDataSetChanged()
     }
 
 
@@ -165,15 +147,15 @@ class KeysFragment() : Fragment() {
         builder.setPositiveButton("确定") { dialog, which ->
             val keyCodeStr = inputKeyCode.text.toString().trim()
             val keyName = inputKeyName.text.toString().trim()
-            Toast.makeText(activity, "$keyName,$keyCodeStr", Toast.LENGTH_SHORT).show();
+
             try {
-                val keyCode = keyCodeStr.toInt();
-                val key = Key(keyCode, keyName, isFavor = 0)
+                val keyCode = keyCodeStr.toInt()
+                val key = Key(keyCode, keyName, false)
                 mData.add(key)
-                keyAdded(key)
-                (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
+                Toast.makeText(activity, key.toString(), Toast.LENGTH_SHORT).show()
+
             } catch (e: NumberFormatException) {
-                Toast.makeText(activity, "key code must be a number", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, "key code must be a number", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -196,24 +178,22 @@ class KeysFragment() : Fragment() {
         val switchIsFovour = view.findViewById<Switch>(R.id.switch_favor)
         inputKeyCode.text = SpannableStringBuilder(key.code.toString())
         inputKeyName.text = SpannableStringBuilder(key.name)
-        switchIsFovour.isChecked = key.isFavor > 0;
+        switchIsFovour.isChecked = key.isFavor
         //添加按钮操作
         builder.setPositiveButton("确定") { dialog, which ->
             val keyCodeStr = inputKeyCode.text.toString().trim()
             val keyName = inputKeyName.text.toString().trim()
-            Toast.makeText(activity, "$keyName,$keyCodeStr", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, "$keyName,$keyCodeStr", Toast.LENGTH_SHORT).show()
             try {
                 val keyCode = keyCodeStr.toInt()
-                var newKey = Key(
+                val newKey = Key(
                         keyCode,
                         keyName,
-                        if (switchIsFovour.isChecked) 1 else 0
+                        switchIsFovour.isChecked
                 )
-                mData.set(mData.indexOf(key), newKey)
-                keyModified(key, newKey)
-                (main_view.adapter as ArrayAdapter<*>).notifyDataSetChanged()
+                mData[mData.indexOf(key)] = newKey
             } catch (e: NumberFormatException) {
-                Toast.makeText(activity, "key code must be a number", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, "key code must be a number", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -222,9 +202,6 @@ class KeysFragment() : Fragment() {
     }
 
 
-    var keyAdded: (Key) -> Unit = { key: Key -> }
     var keyFavor: (Key) -> Unit = { key: Key -> }
-    var keyModified: (Key, Key) -> Unit = { keyOld: Key, keyNew: Key -> }
-    var keyDeleted: (Key) -> Unit = { key: Key -> }
     var keyPressed: (Key) -> Unit = { key: Key -> }
 }// Required empty public constructor

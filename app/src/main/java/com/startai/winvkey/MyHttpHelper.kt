@@ -1,7 +1,7 @@
-package com.win_vkey.startai.winvkey
+package com.startai.winvkey
 
-import com.win_vkey.startai.winvkey.data_class.Key
-import com.win_vkey.startai.winvkey.data_class.Settings
+import com.startai.winvkey.data_class.Key
+import com.startai.winvkey.data_class.Settings
 import okhttp3.*
 
 /**
@@ -15,14 +15,14 @@ class MyHttpHelper {
 
     fun sendKey(key: Key): Call {
         if (settings != null) {
-            var client: OkHttpClient = OkHttpClient()
-            val rqeust: Request = Request.Builder()
+            val client: OkHttpClient = OkHttpClient()
+            val request: Request = Request.Builder()
                     .url(HttpUrl.parse("http://${settings!!.host}:${settings!!.port}/key-down"))
                     .post(FormBody.Builder()
                             .add("KeyCode", "${key.code}")
                             .build())
                     .build()
-            return client.newCall(rqeust)
+            return client.newCall(request)
         } else {
             throw Exception("setting must be initilize")
         }

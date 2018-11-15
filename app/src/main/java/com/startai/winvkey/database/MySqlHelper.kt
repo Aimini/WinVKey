@@ -1,12 +1,10 @@
-package com.win_vkey.startai.winvkey.database
+package com.startai.winvkey.database
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import com.win_vkey.startai.winvkey.data_class.Key
-import com.win_vkey.startai.winvkey.data_class.Settings
+import com.startai.winvkey.data_class.Key
+import com.startai.winvkey.data_class.Settings
 import org.jetbrains.anko.db.*
-import java.net.URL
-import java.sql.Types.BOOLEAN
 
 /**
  * @Author: AiMin
@@ -49,10 +47,10 @@ class MySqlHelper(ctx: Context) : ManagedSQLiteOpenHelper(ctx, ctx.getDatabasePa
     }
 
 
-    public fun saveKey(key:Key) {
+    public fun saveKey(key: Key) {
         this.use {
             insert("Keys",
-                    "name" to key.name, "code" to key.code,"is_favor" to key.isFavor)
+                    "name" to key.name, "code" to key.code,"is_favor" to if(key.isFavor) 1 else 0)
         }
     }
 
@@ -63,7 +61,7 @@ class MySqlHelper(ctx: Context) : ManagedSQLiteOpenHelper(ctx, ctx.getDatabasePa
 
     public fun getKey(isFavor:Boolean?=null):List<Key>{
         return this.use {
-            var res = select("Keys")
+            val res = select("Keys")
             return@use when(isFavor){
                 null -> res;
                 true -> res.whereArgs("is_favor > 0")
@@ -73,16 +71,16 @@ class MySqlHelper(ctx: Context) : ManagedSQLiteOpenHelper(ctx, ctx.getDatabasePa
     }
 
 
-    public fun updateKey(oldKey:Key,newKey:Key) {
+    public fun updateKey(oldKey: Key, newKey: Key) {
         this.use {
             update("Keys",
-                    "name" to newKey.name, "code" to newKey.code,"is_favor" to newKey.isFavor)
+                    "name" to newKey.name, "code" to newKey.code,"is_favor" to if(newKey.isFavor) 1 else 0)
                     .whereArgs("code = {code}", "code" to oldKey.code)
                     .exec()
         }
     }
 
-    public fun deleteKey(key:Key){
+    public fun deleteKey(key: Key){
         this.use{
             delete("Keys","code={code}","code" to key.code)
 

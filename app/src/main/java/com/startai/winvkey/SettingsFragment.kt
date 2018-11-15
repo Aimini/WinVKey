@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey
+package com.startai.winvkey
 
 import android.os.Bundle
 import android.support.v4.app.Fragment
@@ -6,8 +6,7 @@ import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.win_vkey.startai.winvkey.data_class.Settings
-import kotlinx.android.synthetic.main.fragment_keys.*
+import com.startai.winvkey.data_class.Settings
 import kotlinx.android.synthetic.main.fragment_settings.*
 
 
@@ -40,7 +39,7 @@ class SettingsFragment : Fragment() {
 
     private var settings: Settings = Settings()
 
-    fun getSettings():Settings{
+    fun getSettings(): Settings {
             if (input_host != null && input_port !=null) {
                 settings.host = input_host.text.toString()
                 settings.port = input_port.text.toString().toInt()
@@ -49,7 +48,7 @@ class SettingsFragment : Fragment() {
         }
 
 
-    fun   setSettings(s:Settings){
+    fun   setSettings(s: Settings){
         settings = s
     if (input_host != null && input_port !=null)
         loadSettings()

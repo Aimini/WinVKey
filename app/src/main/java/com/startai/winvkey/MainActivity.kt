@@ -1,4 +1,4 @@
-package com.win_vkey.startai.winvkey
+package com.startai.winvkey
 
 import android.os.Bundle
 import android.support.design.widget.BottomNavigationView
@@ -10,20 +10,23 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import com.win_vkey.startai.winvkey.data_class.Key
-import com.win_vkey.startai.winvkey.database.database
-import com.win_vkey.startai.winvkey.ext_method.get
-import com.win_vkey.startai.winvkey.ext_method.size
+import com.startai.winvkey.data_class.Key
+import com.startai.winvkey.data_class.ObservableList
+import com.startai.winvkey.data_class.ObservableListObserver
+import com.startai.winvkey.database.database
+import com.startai.winvkey.ext_method.get
+import com.startai.winvkey.ext_method.size
 import kotlinx.android.synthetic.main.activity_main.*
 import okhttp3.Call
 import okhttp3.Response
 import java.io.IOException
 import java.net.URISyntaxException
+import java.util.*
 import javax.security.auth.callback.Callback
 
 class MainActivity : AppCompatActivity() {
-    private val mFragmentList = ArrayList<Fragment>();
-    private val mKeysFragment = KeysFragment();
+    private val mFragmentList = ArrayList<Fragment>()
+    private val mKeysFragment = KeysFragment()
     private val mFavorKeysFragment = KeysFragment()
     private val mSettingsFragment = SettingsFragment()
 
@@ -40,6 +43,40 @@ class MainActivity : AppCompatActivity() {
         false
     }
 
+    private val mListObserver = object : ObservableListObserver<Key>() {
+        override fun add(source: ObservableList<Key>, value: Key) {
+            this@MainActivity.database.saveKey(value)
+        }
+
+        override fun delete(source: ObservableList<Key>, value: Key) {
+            this@MainActivity.database.deleteKey(value)
+        }
+
+        override fun set(source: ObservableList<Key>, index: Int, value: Key) {
+            this@MainActivity.database.updateKey(source[index], value)
+        }
+    }
+
+
+    private class IGiveYouPleaseDontGiveMeBackAgainObserver<T>(ob: ObservableList<T>) : ObservableListObserver<T>() {
+        private val mOb = ob
+        override fun add(source: ObservableList<T>, value: T) {
+            mOb.pause { mOb.add(value) }
+        }
+
+        override fun delete(source: ObservableList<T>, value: T) {
+            mOb.pause { mOb.remove(value) }
+        }
+
+        override fun set(source: ObservableList<T>, index: Int, value: T) {
+            mOb.pause {
+                val obIndex: Int = mOb.indexOf(source[index])
+                if (obIndex != -1)
+                    mOb[obIndex] = value
+            }
+        }
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,37 +87,29 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun initFragments() {
-        mSettingsFragment.setSettings( this.database.getSettings())
+        mSettingsFragment.setSettings(this.database.getSettings())
         myHttpHelper.settings = mSettingsFragment.getSettings()
         mFavorKeysFragment.isFavor = true
-        var allKeys = this.database.getAllKey().toMutableList()
-        var favorKeys = allKeys.filter { key -> key.isFavor > 0 }.toMutableList()
-        mKeysFragment.setKeysList(allKeys)
-        mKeysFragment.keyAdded = { key ->
-            database.saveKey(key)
-            if (key.isFavor > 0)
-                mFavorKeysFragment.addKey(key)
+
+        val allKeys = this.database.getAllKey().toMutableList()
+
+
+        val favorKeysOb = ObservableList<Key>().apply {
+            addAll(allKeys.filter(Key::isFavor).toMutableList())
+            addObserver(mListObserver)
+
         }
 
-        mKeysFragment.keyDeleted = { key ->
-            database.deleteKey(key)
-            if (key.isFavor > 0)
-                mFavorKeysFragment.removeKey(key)
-        }
-        mKeysFragment.keyModified = { oldKey, newKey ->
-            database.updateKey(oldKey, newKey)
-            if (oldKey.isFavor > 0)
-                mFavorKeysFragment.modifyKey(oldKey, newKey)
-        }
-        mKeysFragment.keyFavor = { key ->
-            database.updateKey(key, key)
-            if (key.isFavor > 0)
-                mFavorKeysFragment.addKey(key)
-            else
-                mFavorKeysFragment.removeKey(key)
-        }
+        val allKeyOb = ObservableList<Key>().apply {
+            addAll(allKeys)
+            addObserver(mListObserver)
 
-        var keyPressedCallback = { key: Key ->
+        }
+        favorKeysOb.addObserver(IGiveYouPleaseDontGiveMeBackAgainObserver(allKeyOb))
+        allKeyOb.addObserver(IGiveYouPleaseDontGiveMeBackAgainObserver(favorKeysOb))
+
+
+       val keyPressedCallback = { key: Key ->
             myHttpHelper.sendKey(key).enqueue(object : Callback, okhttp3.Callback {
                 override fun onFailure(call: Call?, e: IOException?) {
                     this@MainActivity.runOnUiThread(object : Runnable {
@@ -107,30 +136,14 @@ class MainActivity : AppCompatActivity() {
                 }
             })
         }
-        mKeysFragment.keyPressed = keyPressedCallback;
-        mFavorKeysFragment.setKeysList(favorKeys)
-        mFavorKeysFragment.keyDeleted = { key ->
-            database.deleteKey(key)
-            mKeysFragment.removeKey(key)
-        }
-        mFavorKeysFragment.keyModified = { oldKey, newKey ->
-            database.updateKey(oldKey, newKey)
-            mKeysFragment.modifyKey(oldKey, newKey)
-        }
-        mFavorKeysFragment.keyFavor = { key ->
-            database.updateKey(key, key)
-            mKeysFragment.modifyKey(key, key)
-            if (key.isFavor > 0)
-                mFavorKeysFragment.addKey(key)
-            else
-                mFavorKeysFragment.removeKey(key)
-        }
-        mFavorKeysFragment.keyPressed = keyPressedCallback;
 
-/*
-        mFavorKeysFragment.keyFavor;
-        mFavorKeysFragment.keyModified = this:
-*/
+        mKeysFragment.setKeysList(allKeyOb)
+        mKeysFragment.keyPressed = keyPressedCallback
+
+        mFavorKeysFragment.setKeysList(favorKeysOb)
+        mFavorKeysFragment.keyPressed = keyPressedCallback
+
+
         with(mFragmentList) {
             add(mFavorKeysFragment)
             add(mKeysFragment)
@@ -145,7 +158,7 @@ class MainActivity : AppCompatActivity() {
 
         vp.addOnPageChangeListener(object : ViewPager.SimpleOnPageChangeListener() {
             override fun onPageSelected(position: Int) {
-                navigation.menu[position].isChecked = true;
+                navigation.menu[position].isChecked = true
             }
         })
 
