@@ -14,7 +14,7 @@ import kotlin.reflect.KProperty
 class KeyTest {
     var key: Key = Key(120,"123",false)
     var ob = object: KeyObserver() {
-        override fun propertyChanged(o: Observable, obj: Any, property: KProperty<*>, oldValue: Any, newValue: Any) {
+        override fun propertyChanged(o: Observable, obj: Key, property: KProperty<*>, oldValue: Any, newValue: Any) {
             println("property ${property.name}:${property.returnType.toString()}:${oldValue}->${newValue}")
             super.propertyChanged(o, obj, property, oldValue, newValue)
         }

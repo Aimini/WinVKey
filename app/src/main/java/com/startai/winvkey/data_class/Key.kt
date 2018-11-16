@@ -37,14 +37,9 @@ class Key(code:Int,name:String,isFavor:Boolean) : ObservableData() {
 }
 
 
-public open class KeyObserver(): DataObserver() {
-    override fun propertyChanged(o: Observable, obj: Any, property: KProperty<*>, oldValue: Any, newValue: Any) {
-        super.propertyChanged(o, obj, property, oldValue, newValue)
-        if(obj is Key)
-        {
-            this.changed(obj)
-        }
-
+public open class KeyObserver(): DataObserver<Key>() {
+    override fun propertyChanged(o: Observable, obj: Key, property: KProperty<*>, oldValue: Any, newValue: Any) {
+        this.changed(obj)
     }
     //
     open fun changed(currentkey: Key){
